@@ -44,7 +44,14 @@ Namespace LiveStreaming
             Return o
         End Function
 #Else
-        Public Shared Function GetCommentServersAsync(liveId As String) As Task(Of IList(Of CommentServer))
+
+        ''' <summary>
+        ''' 指定された生放送IDからコメントサーバーを取得します。
+        ''' </summary>
+        ''' <param name="liveId"></param>
+        ''' <param name="all"><c>True</c>を指定すると、すべてのコメントサーバーを取得します (ニコニコミュニティの配信のみ)。</param>
+        ''' <returns></returns>
+        Public Shared Function GetCommentServersAsync(liveId As String, Optional ByVal all As Boolean = False) As Task(Of IList(Of CommentServer))
             Dim uri = New Uri(String.Format(CloudAppUriFormat, liveId))
 
             Dim req = HttpWebRequest.Create(uri)
@@ -62,7 +69,36 @@ Namespace LiveStreaming
                                   Return CreateCommentServers(body)
                               End Function)
 
-            Return webTask
+            If Not all Then
+                Return webTask
+            End If
+
+            Dim liveProgramTask = NicoVideoWeb.GetLiveProgramAsync(liveId)
+
+            Return Task.WhenAll(webTask, liveProgramTask).ContinueWith(Of IList(Of CommentServer))(
+                            Function() As IList(Of CommentServer)
+                                Dim commentServers = webTask.Result
+                                Dim program = liveProgramTask.Result
+                                Return If(commentServers.Count = 1 AndAlso Not program.IsOfficial AndAlso TypeOf program.ChannelCommunity Is Community,
+                                    GetAllCommentServers(program, commentServers(0)),
+                                    webTask.Result)
+                            End Function)
+        End Function
+
+        ''' <summary>
+        ''' 指定したライブ配信のすべてのコメントサーバーを取得します。
+        ''' </summary>
+        ''' <param name="program">ニコニコミュニティの配信。</param>
+        ''' <param name="basicServer">指定した配信のいずれかのコメントサーバー。</param>
+        ''' <returns></returns>
+        Private Shared Function GetAllCommentServers(ByVal program As LiveProgram, ByVal basicServer As CommentServer) As IList(Of CommentServer)
+            Dim servers = New List(Of CommentServer)
+
+            For Each room In DirectCast(program.ChannelCommunity, Community).GetCommunityChannelRooms()
+                servers.Add(If(basicServer.Room = room, basicServer, CommentServer.ChangeRoom(basicServer, room)))
+            Next
+
+            Return servers
         End Function
 
 #End If
