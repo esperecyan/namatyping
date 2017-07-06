@@ -367,7 +367,7 @@ Namespace ViewModel
             LiveProgramClient_CommentReceived(Me, New CommentReceivedEventArgs(comment))
         End Sub
 
-        Private Sub LiveProgramClient_CommentReceived(ByVal sender As Object, ByVal e As CommentReceivedEventArgs) Handles LiveProgramClient.CommentReceived
+        Private Sub LiveProgramClient_CommentReceived(ByVal sender As Object, ByVal e As CommentReceivedEventArgs)
 
             If Not Dispatcher.CheckAccess Then
                 Dispatcher.Invoke(New Action(Of Object, CommentReceivedEventArgs)(AddressOf LiveProgramClient_CommentReceived), New Object() {sender, e})
@@ -838,7 +838,7 @@ Namespace ViewModel
 #Region "Connect"
         Private Connecting As Boolean
 
-        Private WithEvents LiveProgramClient As LiveProgramClient
+        Private ReadOnly LiveProgramClientAndRoomLabels As List(Of Tuple(Of LiveProgramClient, String)) = New List(Of Tuple(Of LiveProgramClient, String))
 
         Private _ConnectCommand As ICommand
         Public ReadOnly Property ConnectCommand() As ICommand
@@ -851,9 +851,7 @@ Namespace ViewModel
         End Property
 
         Private Sub Connect(ByVal obj As Object)
-            If LiveProgramClient IsNot Nothing Then
-                LiveProgramClient.Close()
-            End If
+            Disconnect()
 
             If Not Me.LiveProgramId.StartsWith("lv") Then
                 Exit Sub
@@ -861,15 +859,20 @@ Namespace ViewModel
 
             Connecting = True
 
-            LiveProgramClient = New LiveProgramClient
-            LiveProgramClient.GetCommentServersAsync(Me.LiveProgramId) _
+            LiveProgramClient.GetCommentServersAsync(Me.LiveProgramId, ConnectAllCommentServers) _
                 .ContinueWith(
                     Sub(e)
                         If e.Exception IsNot Nothing Then
                             Me.StatusMessage = "エラー: " & e.Exception.InnerException.Message
                             Exit Sub
                         End If
-                        Me.LiveProgramClient.ConnectAsync(e.Result.First)
+                        For Each server In e.Result
+                            Dim client = New LiveProgramClient()
+                            AddHandler client.CommentReceived, AddressOf LiveProgramClient_CommentReceived
+                            AddHandler client.ConnectedChanged, AddressOf LiveProgramClient_ConnectionStatusChanged
+                            client.ConnectAsync(server)
+                            Me.LiveProgramClientAndRoomLabels.Add(Tuple.Create(client, server.RoomLabel))
+                        Next
                         Connecting = False
                     End Sub)
 
@@ -880,7 +883,7 @@ Namespace ViewModel
                 Return False
             End If
 
-            If LiveProgramClient Is Nothing OrElse Not LiveProgramClient.Connected Then
+            If LiveProgramClientAndRoomLabels.Count = 0 OrElse Not LiveProgramClientAndRoomLabels.Exists(Function(clientAndLabel) clientAndLabel.Item1.Connected) Then
                 If Connecting Then
                     Return False
                 Else
@@ -908,15 +911,20 @@ Namespace ViewModel
 
         Private Sub Disconnect(ByVal obj As Object)
 
-            If LiveProgramClient IsNot Nothing Then
-                LiveProgramClient.Close()
-                'LiveProgramClient = Nothing
-            End If
+            For Each clientAndLabel In LiveProgramClientAndRoomLabels
+                Dim client = clientAndLabel.Item1
+                RemoveHandler client.CommentReceived, AddressOf LiveProgramClient_CommentReceived
+                RemoveHandler client.ConnectedChanged, AddressOf LiveProgramClient_ConnectionStatusChanged
+                client.Close()
+            Next
+            LiveProgramClientAndRoomLabels.Clear()
+
+            StatusMessage = "切断しました"
 
         End Sub
 
         Private Function CanDisconnect(ByVal obj As Object) As Boolean
-            Return LiveProgramClient IsNot Nothing AndAlso LiveProgramClient.Connected
+            Return LiveProgramClientAndRoomLabels.Count > 0 AndAlso LiveProgramClientAndRoomLabels.Exists(Function(clientAndLabel) clientAndLabel.Item1.Connected)
         End Function
 
         Public Sub Disconnect()
@@ -1064,34 +1072,38 @@ Namespace ViewModel
 
         End Sub
 
-        Private Sub LiveProgramClient_ConnectCompleted(ByVal sender As Object, ByVal e As System.ComponentModel.AsyncCompletedEventArgs) Handles LiveProgramClient.ConnectCompleted
-            If e.Error Is Nothing Then
-                Exit Sub
-            End If
+        'Private Sub LiveProgramClient_ConnectCompleted(ByVal sender As Object, ByVal e As System.ComponentModel.AsyncCompletedEventArgs) Handles LiveProgramClient.ConnectCompleted
+        '    If e.Error Is Nothing Then
+        '        Exit Sub
+        '    End If
 
-            'If TypeOf e.Error Is NicoVideo.NicoVideoException Then
-            '    Dim nex = DirectCast(e.Error, NicoVideo.NicoVideoException)
-            '    If nex.ErrorDescription <> "" Then
-            '        Me.StatusMessage = String.Format("接続に失敗しました（Code={0}, Desc={1}）", nex.ErrorCode, nex.ErrorDescription)
-            '    Else
-            '        Me.StatusMessage = String.Format("接続に失敗しました（Code={0}）", nex.ErrorCode)
-            '    End If
-            'Else
-            '    Me.StatusMessage = String.Format("接続に失敗しました（{0}）", e.Error.Message)
-            'End If
+        '    'If TypeOf e.Error Is NicoVideo.NicoVideoException Then
+        '    '    Dim nex = DirectCast(e.Error, NicoVideo.NicoVideoException)
+        '    '    If nex.ErrorDescription <> "" Then
+        '    '        Me.StatusMessage = String.Format("接続に失敗しました（Code={0}, Desc={1}）", nex.ErrorCode, nex.ErrorDescription)
+        '    '    Else
+        '    '        Me.StatusMessage = String.Format("接続に失敗しました（Code={0}）", nex.ErrorCode)
+        '    '    End If
+        '    'Else
+        '    '    Me.StatusMessage = String.Format("接続に失敗しました（{0}）", e.Error.Message)
+        '    'End If
 
-        End Sub
+        'End Sub
 
-        Private Sub LiveProgramClient_ConnectionStatusChanged(ByVal sender As Object, ByVal e As EventArgs) Handles LiveProgramClient.ConnectedChanged
+        Private Sub LiveProgramClient_ConnectionStatusChanged(ByVal sender As Object, ByVal e As EventArgs)
+            Dim client = DirectCast(sender, LiveProgramClient)
 
-            If LiveProgramClient.Connected Then
-                Me.StatusMessage = "接続しました"
+            If client.Connected Then
+                Dim prefix = "接続しました: "
+                Dim label = LiveProgramClientAndRoomLabels.Find(Function(clientAndLabel) clientAndLabel.Item1 Is client).Item2
+                If StatusMessage IsNot Nothing AndAlso StatusMessage.StartsWith(prefix) Then
+                    StatusMessage &= ", " & label
+                Else
+                    StatusMessage = prefix & label
+                End If
             Else
-                Me.StatusMessage = "切断しました"
+                Disconnect()
             End If
-
-            Me.Connected = LiveProgramClient.Connected
-
         End Sub
 
 
@@ -1278,6 +1290,8 @@ Namespace ViewModel
                 My.Settings.BlacklistCharactersHighlight = value
             End Set
         End Property
+
+        Public Property ConnectAllCommentServers As Boolean = My.Settings.ConnectAllCommentServers
 
     End Class
 End Namespace
