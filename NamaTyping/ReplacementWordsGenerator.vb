@@ -52,7 +52,7 @@ Friend NotInheritable Class ReplacementWordsGenerator
 
         If outputPath Is Nothing AndAlso
                 Not TryConvertUniqueFileName(outputDirectoryPath, Path.GetFileNameWithoutExtension(inputPath), ".repl.txt", outputPath) Then
-            errorMessage = $"ファイル「{outputPath}」がすでに存在します。"
+            errorMessage = "似た名前の .repl.txt ファイルが多過ぎます。"
             Return False
         End If
 
@@ -66,7 +66,7 @@ Friend NotInheritable Class ReplacementWordsGenerator
     ''' <param name="directoryPath"></param>
     ''' <param name="fileNameWithoutExtension"></param>
     ''' <param name="extension"><c>.</c>で始まる拡張子。</param>
-    ''' <param name="uniquePath">重複しないファイルパス。生成に失敗した場合は、最後に存在確認を行ったファイルパスが入ります。</param>
+    ''' <param name="uniquePath">重複しないファイルパス。</param>
     ''' <returns></returns>
     Private Shared Function TryConvertUniqueFileName(
         ByVal directoryPath As String,
@@ -93,6 +93,7 @@ Friend NotInheritable Class ReplacementWordsGenerator
             Next
         End If
 
+        uniquePath = Nothing
         Return False
     End Function
 
