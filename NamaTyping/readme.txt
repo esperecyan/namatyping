@@ -1,4 +1,10 @@
-﻿README
+﻿┌─────────────────────────────┐
+│https://github.com/esperecyan/namatyping                  │
+│本バージョンは【非公式な】開発版です。                    │
+│通常は以下のURLから公式の最新バージョンをご利用ください。 │
+└─────────────────────────────┘
+
+README
 https://github.com/jz5/namatyping
 
 Images:
