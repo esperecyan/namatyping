@@ -1,5 +1,6 @@
 ﻿Imports System.Xml
 Imports System.Text.RegularExpressions
+Imports System.IO
 
 ''' <summary>
 ''' ニコニコ生放送の運営NGワードに関する処理を行います。
@@ -104,7 +105,7 @@ Friend NotInheritable Class CharacterReplacer
     ''' 外部から取得したNGワード置換ファイルの保存先。
     ''' </summary>
     ''' <returns></returns>
-    Private ReadOnly Property FilePath As String = My.Computer.FileSystem.CombinePath(My.Settings.ParentPath, "SubstList.xml")
+    Private ReadOnly Property FilePath As String = Path.Combine(My.Settings.ParentPath, "SubstList.xml")
 
     Friend Sub New()
         If My.Settings.BlacklistCharactersSeparator.Length = 0 OrElse Regex.IsMatch(My.Settings.BlacklistCharactersSeparator, LetterOrDigitPatternString) Then
@@ -115,12 +116,20 @@ Friend NotInheritable Class CharacterReplacer
     End Sub
 
     ''' <summary>
-    ''' 運営NGワードの分断と置換を行います。
+    ''' 運営NGワードを<see cref="MySettings.BlacklistCharactersSeparator"/>で分断します。
     ''' </summary>
     ''' <param name="lyrics">タイムタグ付きの歌詞。</param>
     ''' <returns></returns>
     Friend Function SplitWords(ByVal lyrics As String) As String
-        lyrics = PatternForReplacement.Replace(lyrics, "$0" & EscapeForReplacementPattern(My.Settings.BlacklistCharactersSeparator))
+        Return PatternForReplacement.Replace(lyrics, "$0" & EscapeForReplacementPattern(My.Settings.BlacklistCharactersSeparator))
+    End Function
+
+    ''' <summary>
+    ''' 1文字の運営NGワードを置換します。
+    ''' </summary>
+    ''' <param name="lyrics">タイムタグ付きの歌詞。</param>
+    ''' <returns></returns>
+    Friend Function ReplaceUnsplittableWors(ByVal lyrics As String) As String
         For Each pair As KeyValuePair(Of String, String) In Variants
             lyrics = lyrics.Replace(pair.Key, pair.Value)
         Next
@@ -192,7 +201,7 @@ Friend NotInheritable Class CharacterReplacer
     ''' NGワード置換ファイルを読み込みます。
     ''' </summary>
     Private Sub Load()
-        If My.Computer.FileSystem.FileExists(FilePath) Then
+        If File.Exists(FilePath) Then
             Dim doc = New XmlDocument
             Try
                 doc.Load(FilePath)

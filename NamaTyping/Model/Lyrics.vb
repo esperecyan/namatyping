@@ -118,9 +118,13 @@ Namespace Model
                 Exit Sub
             End If
 
-            If TryLoadLyrics(LyricsFileName, Encoding) Then
-                LoadReplacementWords(ReplacementWordsFileName, ReplacementWordsFileEncoding)
-            Else
+            Dim previousReplacementWords = New Dictionary(Of String, String)(ReplacementWords)
+            LoadReplacementWords(ReplacementWordsFileName, ReplacementWordsFileEncoding)
+            If Not TryLoadLyrics(LyricsFileName, Encoding) Then
+                ReplacementWords.Clear()
+                For Each values In previousReplacementWords
+                    ReplacementWords.Add(values)
+                Next
                 MessageBox.Show(
                     $"「{System.IO.Path.GetFileName(LyricsFileName)}」にはタイムタグで始まる行がありません",
                     My.Application.Info.Title,
@@ -143,7 +147,7 @@ Namespace Model
             Try
                 doc = XDocument.Load(file)
             Catch ex As System.Xml.XmlException
-                errorMessage = $"「{My.Computer.FileSystem.GetName(file)}」の読み込みに失敗しました: {ex.Message}"
+                errorMessage = $"「{System.IO.Path.GetFileName(file)}」の読み込みに失敗しました: {ex.Message}"
                 Return False
             End Try
             Dim path = System.IO.Path.GetDirectoryName(file)
@@ -155,7 +159,7 @@ Namespace Model
                     Try
                         Encoding = System.Text.Encoding.GetEncoding(entry.<ntype:encoding>.Value)
                         ReplacementWordsFileEncoding = Encoding
-                    Catch ex As ArgumentException
+                    Catch ex As ArgumentException When ex.ParamName = "name"
                         ' ignore
                     End Try
                 End If
@@ -310,30 +314,26 @@ Namespace Model
 
         Private Function TryLoadLyrics(ByVal file As String, ByRef encoding As System.Text.Encoding) As Boolean
             Dim rawLines = New List(Of String)
-            Dim t = ReadAllText(file, encoding)
-            If My.Settings.BlacklistCharactersHighlight Then
+            Dim t = CharacterReplacer.ReplaceUnsplittableWors(ReadAllText(file, encoding))
+            If My.Settings.SplitBlacklistCharacters Then
                 t = CharacterReplacer.SplitWords(t)
             End If
+
             For Each l In ReadLinesWithoutBlankLines(t)
-                If Not l.StartsWith("[") Then
-                    Continue For
+                Dim m = Regex.Match(l, "^\[\d{2}:\d{2}:\d{2}\](?<karaoke>.*\[\d{2}:\d{2}:\d{2}\])?")
+                If m.Success Then
+                    rawLines.Add(l)
+
+                    ' 1行に複数タイムタグがあるか
+                    If Not WipeEnabled AndAlso m.Groups.Item("karaoke").Success Then
+                        WipeEnabled = True
+                    End If
                 End If
-                rawLines.Add(l)
             Next
 
             If rawLines.Count = 0 Then
                 Return False
             End If
-
-            ' 1行に複数タイムタグがあるか
-            For Each l In rawLines
-                Dim m = Regex.Matches(l, "\[\d{2}:\d{2}:\d{2}\]")
-                If m.Count > 1 Then
-                    WipeEnabled = True
-                    Exit For
-                End If
-            Next
-
 
             For i = 0 To rawLines.Count - 2
                 If Not rawLines(i).EndsWith("]") Then

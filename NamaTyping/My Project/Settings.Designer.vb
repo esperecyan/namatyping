@@ -292,10 +292,10 @@ Partial Friend NotInheritable Class MySettings
     End Property
     
     '''<summary>
-    '''運営NGワードの強調などを行う。
+    '''運営NGワードについて、歌詞の一致部分を強調する。
     '''</summary>
     <Global.System.Configuration.UserScopedSettingAttribute(),  _
-     Global.System.Configuration.SettingsDescriptionAttribute("運営NGワードの強調などを行う。"),  _
+     Global.System.Configuration.SettingsDescriptionAttribute("運営NGワードについて、歌詞の一致部分を強調する。"),  _
      Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
      Global.System.Configuration.DefaultSettingValueAttribute("True"),  _
      Global.System.Configuration.SettingsManageabilityAttribute(Global.System.Configuration.SettingsManageability.Roaming)>  _
@@ -305,6 +305,23 @@ Partial Friend NotInheritable Class MySettings
         End Get
         Set
             Me("BlacklistCharactersHighlight") = value
+        End Set
+    End Property
+    
+    '''<summary>
+    '''運営NGワードについて、歌詞の一致部分に記号を挿入する。
+    '''</summary>
+    <Global.System.Configuration.UserScopedSettingAttribute(),  _
+     Global.System.Configuration.SettingsDescriptionAttribute("運営NGワードについて、歌詞の一致部分に記号を挿入する。"),  _
+     Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+     Global.System.Configuration.DefaultSettingValueAttribute("True"),  _
+     Global.System.Configuration.SettingsManageabilityAttribute(Global.System.Configuration.SettingsManageability.Roaming)>  _
+    Public Property SplitBlacklistCharacters() As Boolean
+        Get
+            Return CType(Me("SplitBlacklistCharacters"),Boolean)
+        End Get
+        Set
+            Me("SplitBlacklistCharacters") = value
         End Set
     End Property
     
@@ -322,6 +339,23 @@ Partial Friend NotInheritable Class MySettings
         End Get
         Set
             Me("ConnectAllCommentServers") = value
+        End Set
+    End Property
+    
+    '''<summary>
+    '''経過時間と総時間を、歌詞表示領域の右上にも表示する
+    '''</summary>
+    <Global.System.Configuration.UserScopedSettingAttribute(),  _
+     Global.System.Configuration.SettingsDescriptionAttribute("経過時間と総時間を、歌詞表示領域の右上にも表示する"),  _
+     Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+     Global.System.Configuration.DefaultSettingValueAttribute("True"),  _
+     Global.System.Configuration.SettingsManageabilityAttribute(Global.System.Configuration.SettingsManageability.Roaming)>  _
+    Public Property ShowTimeOnLyricsGrid() As Boolean
+        Get
+            Return CType(Me("ShowTimeOnLyricsGrid"),Boolean)
+        End Get
+        Set
+            Me("ShowTimeOnLyricsGrid") = value
         End Set
     End Property
     
