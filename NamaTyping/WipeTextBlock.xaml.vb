@@ -11,6 +11,11 @@ Public Class WipeTextBlock
     Private WithEvents MyStoryboard As Storyboard
     Private _wipeDurations As List(Of TimeSpan)
 
+    ''' <summary>
+    ''' ワイプ表示を一旦停止する文字インデックスと停止時間。
+    ''' </summary>
+    Private _wipePauseDurations As Dictionary(Of Integer, TimeSpan) = New Dictionary(Of Integer, TimeSpan)
+
     Private _wipEnabled As Boolean = True
     Public Property WipeEnabled As Boolean
         Get
@@ -53,6 +58,18 @@ Public Class WipeTextBlock
         End Set
     End Property
 
+    Private _errorMessage As String
+
+    ''' <summary>
+    ''' 不正なタイムタグがあった場合のエラーメッセージ。
+    ''' </summary>
+    ''' <returns></returns>
+    Friend ReadOnly Property ErrorMessage() As String
+        Get
+            Return _errorMessage
+        End Get
+    End Property
+
     Public Shared ReadOnly TextWithTimeTagProperty As DependencyProperty =
                                DependencyProperty.Register("TextWithTimeTag",
                                GetType(String), GetType(WipeTextBlock),
@@ -62,6 +79,11 @@ Public Class WipeTextBlock
     Public Sub Wipe(taggedText As String, offset As TimeSpan)
 
         Parse(taggedText.Replace("　", "  "))
+
+        If _wipeDurations.Count = 0 Then
+            ' 2つ目のタイムタグが不正な値であればワイプ表示しない
+            Exit Sub
+        End If
 
         '#If DEBUG Then
         '        For i = 0 To Me.Text.Length - 1
@@ -85,7 +107,7 @@ Public Class WipeTextBlock
     End Sub
 
 
-    Private Sub Wipe(postion As Integer)
+    Private Sub Wipe(postion As Integer, Optional pause As Boolean = False)
         'Console.WriteLine(postion)
 
         MyStoryboard = New Storyboard
@@ -93,8 +115,8 @@ Public Class WipeTextBlock
         ' TODO 例外処理
         Dim d1 = New DoubleAnimation With {
             .From = 0,
-            .To = 1,
-            .Duration = New Duration(_wipeDurations(postion))
+            .To = If(pause, 0, 1),
+            .Duration = New Duration(If(pause, _wipePauseDurations(postion), _wipeDurations(postion)))
         }
 
         Dim d2 = d1.Clone
@@ -126,7 +148,14 @@ Public Class WipeTextBlock
             If WipeAnimationTextEffect.PositionStart < Text.Length - 1 Then
                 WipeAnimationTextEffect.PositionStart += 1
 
-                If _wipeDurations(WipeAnimationTextEffect.PositionStart).TotalMilliseconds > 0 Then
+                If WipeAnimationTextEffect.PositionStart >= _wipeDurations.Count Then
+                    ' 不正な値のタイムタグがあればワイプ表示を中止
+                    WipeAnimationTextEffect.PositionStart -= 1
+                    Exit Do
+                ElseIf _wipePauseDurations.ContainsKey(WipeAnimationTextEffect.PositionStart) Then
+                    Wipe(WipeAnimationTextEffect.PositionStart, True)
+                    Exit Do
+                ElseIf _wipeDurations(WipeAnimationTextEffect.PositionStart).TotalMilliseconds > 0 Then
                     Wipe(WipeAnimationTextEffect.PositionStart)
                     Exit Do
                 End If
@@ -158,10 +187,20 @@ Public Class WipeTextBlock
 
             If i > 0 Then
 
-                If ts.Subtract(previousTimeSpan) > TimeSpan.FromSeconds(0) Then
-                    durations.AddRange(GetDurations(ts.Subtract(previousTimeSpan), GetTextWidths(previousLyric)))
+                If ts.Subtract(previousTimeSpan) >= TimeSpan.FromSeconds(0) Then
+                    Dim duration = ts.Subtract(previousTimeSpan)
+                    If previousLyric = "" Then
+                        ' 連続したタイムタグなら
+                        _wipePauseDurations.Add(durations.Count, duration)
+                    Else
+                        durations.AddRange(GetDurations(duration, GetTextWidths(previousLyric)))
+                    End If
                 Else
-                    ' TODO invalid tag
+                    ' 一つ前のタイムタグより値が小さい不正なタイムタグであれば
+                    lyric = String.Join("", From match In matches Skip i Select DirectCast(match, Match).Groups("lyric").Value)
+                    sb.Append(lyric)
+                    _errorMessage = $"{m.Groups("tag").Value} は、一つ前の {matches(i - 1).Groups("tag").Value} よりも小さい値のタイムタグです。"
+                    Exit For
                 End If
 
             End If
