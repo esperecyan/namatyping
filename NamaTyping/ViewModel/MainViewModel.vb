@@ -612,6 +612,9 @@ Namespace ViewModel
                 wtb.SetBinding(WipeTextBlock.FontSizeProperty, binding)
                 If _lyrics.WipeEnabled Then
                     wtb.TextWithTimeTag = _lyrics.Lines(_lyricsIndex).TextWithTimeTag
+                    If (wtb.ErrorMessage IsNot Nothing) Then
+                        StatusMessage = wtb.ErrorMessage
+                    End If
                 Else
                     wtb.WipeEnabled = False
                     wtb.Text = _lyrics.Lines(_lyricsIndex).Text

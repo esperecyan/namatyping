@@ -53,6 +53,18 @@ Public Class WipeTextBlock
         End Set
     End Property
 
+    Private _errorMessage As String
+
+    ''' <summary>
+    ''' 不正なタイムタグがあった場合のエラーメッセージ。
+    ''' </summary>
+    ''' <returns></returns>
+    Friend ReadOnly Property ErrorMessage() As String
+        Get
+            Return _errorMessage
+        End Get
+    End Property
+
     Public Shared ReadOnly TextWithTimeTagProperty As DependencyProperty =
                                DependencyProperty.Register("TextWithTimeTag",
                                GetType(String), GetType(WipeTextBlock),
@@ -62,6 +74,11 @@ Public Class WipeTextBlock
     Public Sub Wipe(taggedText As String, offset As TimeSpan)
 
         Parse(taggedText.Replace("　", "  "))
+
+        If _wipeDurations.Count = 0 Then
+            ' 2つ目のタイムタグが不正な値であればワイプ表示しない
+            Exit Sub
+        End If
 
         '#If DEBUG Then
         '        For i = 0 To Me.Text.Length - 1
@@ -126,7 +143,11 @@ Public Class WipeTextBlock
             If WipeAnimationTextEffect.PositionStart < Text.Length - 1 Then
                 WipeAnimationTextEffect.PositionStart += 1
 
-                If _wipeDurations(WipeAnimationTextEffect.PositionStart).TotalMilliseconds > 0 Then
+                If WipeAnimationTextEffect.PositionStart >= _wipeDurations.Count Then
+                    ' 不正な値のタイムタグがあればワイプ表示を中止
+                    WipeAnimationTextEffect.PositionStart -= 1
+                    Exit Do
+                ElseIf _wipeDurations(WipeAnimationTextEffect.PositionStart).TotalMilliseconds > 0 Then
                     Wipe(WipeAnimationTextEffect.PositionStart)
                     Exit Do
                 End If
@@ -161,7 +182,11 @@ Public Class WipeTextBlock
                 If ts.Subtract(previousTimeSpan) >= TimeSpan.FromSeconds(0) Then
                     durations.AddRange(GetDurations(ts.Subtract(previousTimeSpan), GetTextWidths(previousLyric)))
                 Else
-                    ' TODO invalid tag
+                    ' 一つ前のタイムタグより値が小さい不正なタイムタグであれば
+                    lyric = String.Join("", From match In matches Skip i Select DirectCast(match, Match).Groups("lyric").Value)
+                    sb.Append(lyric)
+                    _errorMessage = $"{m.Groups("tag").Value} は、一つ前の {matches(i - 1).Groups("tag").Value} よりも小さい値のタイムタグです。"
+                    Exit For
                 End If
 
             End If
