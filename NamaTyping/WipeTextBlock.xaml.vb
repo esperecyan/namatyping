@@ -11,6 +11,11 @@ Public Class WipeTextBlock
     Private WithEvents MyStoryboard As Storyboard
     Private _wipeDurations As List(Of TimeSpan)
 
+    ''' <summary>
+    ''' ワイプ表示を一旦停止する文字インデックスと停止時間。
+    ''' </summary>
+    Private _wipePauseDurations As Dictionary(Of Integer, TimeSpan) = New Dictionary(Of Integer, TimeSpan)
+
     Private _wipEnabled As Boolean = True
     Public Property WipeEnabled As Boolean
         Get
@@ -102,7 +107,7 @@ Public Class WipeTextBlock
     End Sub
 
 
-    Private Sub Wipe(postion As Integer)
+    Private Sub Wipe(postion As Integer, Optional pause As Boolean = False)
         'Console.WriteLine(postion)
 
         MyStoryboard = New Storyboard
@@ -110,8 +115,8 @@ Public Class WipeTextBlock
         ' TODO 例外処理
         Dim d1 = New DoubleAnimation With {
             .From = 0,
-            .To = 1,
-            .Duration = New Duration(_wipeDurations(postion))
+            .To = If(pause, 0, 1),
+            .Duration = New Duration(If(pause, _wipePauseDurations(postion), _wipeDurations(postion)))
         }
 
         Dim d2 = d1.Clone
@@ -147,6 +152,9 @@ Public Class WipeTextBlock
                     ' 不正な値のタイムタグがあればワイプ表示を中止
                     WipeAnimationTextEffect.PositionStart -= 1
                     Exit Do
+                ElseIf _wipePauseDurations.ContainsKey(WipeAnimationTextEffect.PositionStart) Then
+                    Wipe(WipeAnimationTextEffect.PositionStart, True)
+                    Exit Do
                 ElseIf _wipeDurations(WipeAnimationTextEffect.PositionStart).TotalMilliseconds > 0 Then
                     Wipe(WipeAnimationTextEffect.PositionStart)
                     Exit Do
@@ -180,7 +188,13 @@ Public Class WipeTextBlock
             If i > 0 Then
 
                 If ts.Subtract(previousTimeSpan) >= TimeSpan.FromSeconds(0) Then
-                    durations.AddRange(GetDurations(ts.Subtract(previousTimeSpan), GetTextWidths(previousLyric)))
+                    Dim duration = ts.Subtract(previousTimeSpan)
+                    If previousLyric = "" Then
+                        ' 連続したタイムタグなら
+                        _wipePauseDurations.Add(durations.Count, duration)
+                    Else
+                        durations.AddRange(GetDurations(duration, GetTextWidths(previousLyric)))
+                    End If
                 Else
                     ' 一つ前のタイムタグより値が小さい不正なタイムタグであれば
                     lyric = String.Join("", From match In matches Skip i Select DirectCast(match, Match).Groups("lyric").Value)
