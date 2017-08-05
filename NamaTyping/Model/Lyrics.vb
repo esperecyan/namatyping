@@ -306,11 +306,15 @@ Namespace Model
                     Continue For
                 End If
 
-                values(0) = values(0).ToLyricsWords(False)
+                values(0) = values(0).Trim().ToLyricsWords(False)
+                    ' 無効
+                    Continue For
+                End If
+
                 If Not ReplacementWords.ContainsKey(values(0)) Then
                     values(1) = values(1).ToLyricsWords(True)
                     If values(1) <> "" Then
-                        ReplacementWords.Add(values(0).Trim, values(1))
+                        ReplacementWords.Add(values(0), values(1))
                     End If
                 Else
                     ' MEMO: 風クスの同じ単語がある場合
