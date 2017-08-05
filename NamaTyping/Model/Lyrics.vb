@@ -307,6 +307,7 @@ Namespace Model
                 End If
 
                 values(0) = values(0).Trim().ToLyricsWords(False)
+                If values(0) = "" OrElse values(0).Contains(" ") Then
                     ' 無効
                     Continue For
                 End If
