@@ -232,8 +232,8 @@ Namespace ViewModel
             End Set
         End Property
 
-        Private Const TitleFotter As String = " - ニコ生タイピング"
-        Private _windowTitle As String = "ニコ生タイピング"
+        Private Const TitleFotter As String = " - ニコ生タイピング【非公式】"
+        Private _windowTitle As String = "ニコ生タイピング【非公式】"
         Public Property WindowTitle As String
             Get
                 Return _windowTitle
