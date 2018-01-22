@@ -11,7 +11,7 @@ Imports System.Windows
 
 ' Review the values of the assembly attributes
 
-<Assembly: AssemblyTitle("ニコ生タイピング")> 
+<Assembly: AssemblyTitle("ニコ生タイピング【非公式】")>
 <Assembly: AssemblyDescription("")> 
 <Assembly: AssemblyCompany("")> 
 <Assembly: AssemblyProduct("")> 
