@@ -467,6 +467,7 @@ Namespace ViewModel
             ' TODO nest解消
 
             For Each t In texts
+                Dim scored = False
                 Do
                     For i = user.LyricsIndex To _lyricsIndex - 1
 
@@ -518,6 +519,8 @@ Namespace ViewModel
                                     Exit Do
                                 End If
 
+                                scored = True
+
                             Else
                                 Dim yomi = t.ToHiragana(_lyrics.ReplacementWords)
                                 If yomi.StartsWith(_lyrics.Lines(i).Yomi(j)) Then
@@ -563,6 +566,12 @@ Namespace ViewModel
                                     Else
                                         Exit Do
                                     End If
+
+                                    scored = True
+
+                                ElseIf scored Then
+                                    Exit Do
+
                                 End If
                             End If
 
