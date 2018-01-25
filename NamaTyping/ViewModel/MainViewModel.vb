@@ -17,6 +17,11 @@ Namespace ViewModel
     Public Class MainViewModel
         Inherits ViewModelBase
 
+        ''' <summary>
+        ''' 歌詞表示以外の処理では、始めから存在しない文字として扱う歌詞ファイル中の記号の正規表現文字列。
+        ''' </summary>
+        Friend Const RemoveSymbols As String = "['’]+"
+
         Public Property Dispatcher As Dispatcher
 
         ''' <summary>
@@ -232,8 +237,8 @@ Namespace ViewModel
             End Set
         End Property
 
-        Private Const TitleFotter As String = " - ニコ生タイピング"
-        Private _windowTitle As String = "ニコ生タイピング"
+        Private Const TitleFotter As String = " - ニコ生タイピング【非公式】"
+        Private _windowTitle As String = "ニコ生タイピング【非公式】"
         Public Property WindowTitle As String
             Get
                 Return _windowTitle
@@ -462,6 +467,7 @@ Namespace ViewModel
             ' TODO nest解消
 
             For Each t In texts
+                Dim scored = False
                 Do
                     For i = user.LyricsIndex To _lyricsIndex - 1
 
@@ -513,6 +519,8 @@ Namespace ViewModel
                                     Exit Do
                                 End If
 
+                                scored = True
+
                             Else
                                 Dim yomi = t.ToHiragana(_lyrics.ReplacementWords)
                                 If yomi.StartsWith(_lyrics.Lines(i).Yomi(j)) Then
@@ -558,6 +566,12 @@ Namespace ViewModel
                                     Else
                                         Exit Do
                                     End If
+
+                                    scored = True
+
+                                ElseIf scored Then
+                                    Exit Do
+
                                 End If
                             End If
 
