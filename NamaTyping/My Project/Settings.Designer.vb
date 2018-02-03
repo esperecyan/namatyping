@@ -480,6 +480,15 @@ Partial Friend NotInheritable Class MySettings
             Return CType(Me("RecentMessagesCount"),Integer)
         End Get
     End Property
+    
+    <Global.System.Configuration.ApplicationScopedSettingAttribute(),  _
+     Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+     Global.System.Configuration.DefaultSettingValueAttribute("20")>  _
+    Public ReadOnly Property DurationSecondsDisplayingRanking() As Integer
+        Get
+            Return CType(Me("DurationSecondsDisplayingRanking"),Integer)
+        End Get
+    End Property
 End Class
 
 Namespace My
