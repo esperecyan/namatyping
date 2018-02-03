@@ -1103,6 +1103,14 @@ Namespace ViewModel
                 Next
             End If
 
+            ' 表示時間の調整
+            Dim spanSeconds = 1.0
+            Dim durationSenconds = orderedMember.Count * spanSeconds
+            If durationSenconds > My.Settings.DurationSecondsDisplayingRanking Then
+                durationSenconds = My.Settings.DurationSecondsDisplayingRanking
+                spanSeconds = durationSenconds / orderedMember.Count
+            End If
+
             If Player.HasAudio Then
                 Dim p = Player.NaturalDuration.TimeSpan.TotalSeconds - (orderedMember.Count + 1)
                 If p < 0 Then
@@ -1114,7 +1122,7 @@ Namespace ViewModel
                 Player.Play()
             End If
 
-            RankingTimer.Interval = New TimeSpan(0, 0, 1)
+            RankingTimer.Interval = TimeSpan.FromSeconds(spanSeconds)
             RankingTimer.Start()
 
             '#If DEBUG Then
