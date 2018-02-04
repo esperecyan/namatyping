@@ -42,6 +42,8 @@ Class Application
         ViewModel.Dispatcher = ScreenWindow.Dispatcher
         ScreenWindow.Show()
 
+        ViewModel.ShowVersionInformation()
+
 
 #If DEBUG Then
         For i = 0 To 30
@@ -171,7 +173,9 @@ Class Application
         My.Settings.BottomGridOpacity = ViewModel.BottomGridOpacity
         My.Settings.RecentLyricLineCount = ViewModel.RecentLyricLineCount
         My.Settings.Volume = ViewModel.Volume
-        My.Settings.WindowSizePattern = ViewModel.WindowSizePattern
+        My.Settings.WindowWidth = CType(ScreenWindow.ScreenControl.Width, Integer)
+        My.Settings.WindowHeight = CType(ScreenWindow.ScreenControl.Height, Integer)
+        My.Settings.MediaStretch = ScreenWindow.ScreenControl.MyImage.Stretch
         My.Settings.ConnectAllCommentServers = ViewModel.ConnectAllCommentServers
 
         My.Settings.WindowLeft = ScreenWindow.Left
