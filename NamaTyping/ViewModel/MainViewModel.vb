@@ -150,6 +150,17 @@ Namespace ViewModel
             End Set
         End Property
 
+        Private _SeparateMedia As Boolean = My.Settings.SeparateMedia
+        Public Property SeparateMedia As Boolean
+            Get
+                Return _SeparateMedia
+            End Get
+            Set
+                _SeparateMedia = Value
+                OnPropertyChanged("SeparateMedia")
+            End Set
+        End Property
+
         Private _backgroundImage As Uri
         Public Property BackgroundImage As Uri
             Get
@@ -248,8 +259,8 @@ Namespace ViewModel
             End Set
         End Property
 
-        Private Const TitleFotter As String = " - ニコ生タイピング"
-        Private _windowTitle As String = "ニコ生タイピング"
+        Private Const TitleFotter As String = " - ニコ生タイピング【非公式】"
+        Private _windowTitle As String = "ニコ生タイピング【非公式】"
         Public Property WindowTitle As String
             Get
                 Return _windowTitle
