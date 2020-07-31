@@ -1,4 +1,4 @@
-﻿Imports System.Xml
+Imports System.Xml
 Imports System.ServiceModel.Syndication
 Imports System.Windows.Threading
 Imports Pronama.NamaTyping.ViewModel
@@ -24,9 +24,7 @@ Class Application
 
         ViewModel = New MainViewModel
 
-        ScreenWindow = New ScreenWindow With {
-            .DataContext = ViewModel
-        }
+        ScreenWindow = New ScreenWindow(context:=ViewModel)
         ScreenWindow.ScreenControl.DataContext = ViewModel
         ScreenWindow.Topmost = My.Settings.Topmost
         If Not Double.IsNaN(My.Settings.WindowLeft) Then
@@ -42,8 +40,11 @@ Class Application
         ViewModel.Dispatcher = ScreenWindow.Dispatcher
         ScreenWindow.Show()
 
-        ViewModel.ShowVersionInformation()
+        ViewModel.Messages.Add("　本バージョンは【非公式な】開発版です。通常は「readme.txt」に記載のURLで公開されている、公式の最新バージョンをご利用ください。
 
+　本プログラムは、5zj氏が著作した『ニコ生タイピング』の派生著作物です。また本プログラムは、Tsuyoshi Komuta氏が著作した『NMeCab』を利用する著作物であり、同ライブラリのライセンスは同梱の「lgpl.txt」を参照してください。")
+
+        ViewModel.ShowVersionInformation()
 
 #If DEBUG Then
         For i = 0 To 30
@@ -174,10 +175,12 @@ Class Application
         My.Settings.BottomGridOpacity = ViewModel.BottomGridOpacity
         My.Settings.RecentLyricLineCount = ViewModel.RecentLyricLineCount
         My.Settings.Volume = ViewModel.Volume
-        My.Settings.WindowWidth = CType(ScreenWindow.ScreenControl.Width, Integer)
-        My.Settings.WindowHeight = CType(ScreenWindow.ScreenControl.Height, Integer)
+        With ScreenWindow.ScreenControl.Media
+            My.Settings.WindowWidth = CType(.Width, Integer)
+            My.Settings.WindowHeight = CType(.Height, Integer)
+        End With
         My.Settings.MediaStretch = ScreenWindow.ScreenControl.MyImage.Stretch
-        My.Settings.ConnectAllCommentServers = ViewModel.ConnectAllCommentServers
+        My.Settings.SeparateMedia = ViewModel.SeparateMedia
 
         My.Settings.WindowLeft = ScreenWindow.Left
         My.Settings.WindowTop = ScreenWindow.Top
